@@ -105,7 +105,7 @@ class JsonDatabase {
     constructor(_path) {
         this.path = _path;
 
-        if (fs.existsSync(_path)) fs.writeFileSync(_path, "[]");
+        if (!fs.existsSync(_path)) fs.writeFileSync(_path, "[]");
 
         this.cache = JSON.parse(fs.readFileSync(_path));
         this.lastSave = 0;
