@@ -45,6 +45,8 @@ app.get("/phone-number", (req, res) => {
     credentials.save();
 
     axios.get(endpoints.find, { params: { input: company + " " + address, inputtype: "textquery", fields: "name,place_id", key: KEY } }).then(_res => {
+        if (_res.data.status != "OK") return res.status(400).send(_res.data.error_message || "Error");
+
         if (_res.data.candidates.length == 0) {
             history.cache.push({ company });
             history.save();
@@ -55,7 +57,7 @@ app.get("/phone-number", (req, res) => {
 
         if (name.startsWith(company) || name.endsWith(company) || name.includes(" " + company + " ")) {
             axios.get(endpoints.details, { params: { place_id, fields: "international_phone_number", key: KEY } }).then(__res => {
-                var { international_phone_number } = __res.data.result;
+                var international_phone_number = __res.data.result?.international_phone_number;
 
                 history.cache.push({ company, international_phone_number });
                 history.save();
