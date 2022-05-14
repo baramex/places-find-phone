@@ -58,9 +58,9 @@ app.get("/phone-number", (req, res) => {
 
         var simComp = company;
         if(simComp.includes("(") && simComp.includes(")")) {
-            simComp = simComp.replace(/\*\([^)]*\) */g, "");
+            simComp = simComp.replace(/ *\([^)]*\)*/g, "");
         }
-        if (stringSimilarity.compareTwoStrings(simComp, name) >= 0.7 || name.startsWith(simComp) || name.endsWith(simComp) || name.includes(" " + simComp + " ")) {
+        if (stringSimilarity.compareTwoStrings(simComp, name) >= 0.6 || name.startsWith(simComp) || name.endsWith(simComp) || name.includes(" " + simComp + " ")) {
             axios.get(endpoints.details, { params: { place_id, fields: "international_phone_number", key: KEY } }).then(__res => {
                 var international_phone_number = __res.data.result?.international_phone_number;
 
