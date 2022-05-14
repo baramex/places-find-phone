@@ -45,9 +45,9 @@ app.get("/phone-number", (req, res) => {
     credentials.save();
 
     axios.get(endpoints.find, { params: { input: company + " " + address, inputtype: "textquery", fields: "name,place_id", key: KEY } }).then(_res => {
-        if (_res.data.status != "OK") return res.status(400).send(_res.data.error_message || "Error");
+        if (_res.data.status == "REQUEST_DENIED") return res.status(400).send(_res.data.error_message || "Error");
 
-        if (_res.data.candidates.length == 0) {
+        if (_res.data.status == "ZERO_RESULTS") {
             history.cache.push({ company });
             history.save();
             return res.status(400).send("Company not found");
