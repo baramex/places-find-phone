@@ -1,5 +1,6 @@
 const { default: axios } = require("axios");
 const fs = require("fs");
+const stringSimilarity = require("string-similarity");
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -55,7 +56,7 @@ app.get("/phone-number", (req, res) => {
         var name = _res.data.candidates[0].name.toLowerCase();
         var place_id = _res.data.candidates[0].place_id;
 
-        if (name.startsWith(company) || name.endsWith(company) || name.includes(" " + company + " ")) {
+        if (stringSimilarity.compareTwoStrings(company, name) > 0.8) {
             axios.get(endpoints.details, { params: { place_id, fields: "international_phone_number", key: KEY } }).then(__res => {
                 var international_phone_number = __res.data.result?.international_phone_number;
 
