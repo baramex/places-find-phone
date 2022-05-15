@@ -34,52 +34,68 @@ app.get("/phone-number", (req, res) => {
 
     if (!profil || !profil.permissions.includes(endpoint)) return res.sendStatus(403);
 
+    history.cache = history.cache.filter(a => new Date().getTime() - a.date < 1000 * 60 * 60 * 24 * 30);
+    history.save();
+
     if (history.find(a => a.company == company)) {
         if (!history.find(a => a.company == company).international_phone_number) return res.status(400).send("No phone number");
         return res.status(200).json({ international_phone_number: history.find(a => a.company == company).international_phone_number });
     }
 
-    var monthly = profil.requests.filter(a => new Date().getTime() - a.date < 1000 * 60 * 60 && a.endpoint == endpoint).length;
-    if (monthly > 1000) return res.sendStatus(429);
+    profil.requests = profil.requests.filter(a => new Date().getTime() - a.date < 1000 * 60 * 60 * 24 * 30);
+
+    var monthly = profil.requests.filter(a => a.endpoint == endpoint).length;
+    if (monthly > 1000) {
+        credentials.save();
+        return res.sendStatus(429);
+    }
 
     profil.requests.push({ endpoint, date: new Date().getTime() });
     credentials.save();
 
-    axios.get(endpoints.find, { params: { input: company + " " + address, inputtype: "textquery", fields: "name,place_id", key: KEY } }).then(_res => {
+    axios.get(endpoints.find, { params: { input: company + " " + address, inputtype: "textquery", key: KEY } }).then(_res => {
         if (_res.data.status == "REQUEST_DENIED") return res.status(400).send(_res.data.error_message || "Error");
 
         if (_res.data.status == "ZERO_RESULTS") {
-            history.cache.push({ company });
+            history.cache.push({ company, date: new Date().getTime() });
             history.save();
             return res.status(400).send("Company not found");
         }
-        var name = _res.data.candidates[0].name.toLowerCase();
+
         var place_id = _res.data.candidates[0].place_id;
 
-        var simComp = company;
-        if(simComp.includes("(") && simComp.includes(")")) {
-            simComp = simComp.replace(/ *\([^)]*\)*/g, "");
+        if (history.find(a => a.place_id == place_id)) {
+            if (!history.find(a => a.place_id == place_id).international_phone_number) return res.status(400).send("No phone number");
+            return res.status(200).json({ international_phone_number: history.find(a => a.place_id == place_id).international_phone_number });
         }
-        if (stringSimilarity.compareTwoStrings(simComp, name) >= 0.6 || name.startsWith(simComp) || name.endsWith(simComp) || name.includes(" " + simComp + " ")) {
-            axios.get(endpoints.details, { params: { place_id, fields: "international_phone_number", key: KEY } }).then(__res => {
+
+        axios.get(endpoints.details, { params: { place_id, fields: "international_phone_number,name", key: KEY } }).then(__res => {
+            var name = __res.data.result.name.toLowerCase();
+
+            var simComp = company;
+            if (simComp.includes("(") && simComp.includes(")")) {
+                simComp = simComp.replace(/ *\([^)]*\)*/g, "");
+            }
+            if (stringSimilarity.compareTwoStrings(simComp, name) >= 0.6 || name.startsWith(simComp) || name.endsWith(simComp) || name.includes(" " + simComp + " ")) {
+
                 var international_phone_number = __res.data.result?.international_phone_number;
 
-                history.cache.push({ company, international_phone_number });
+                history.cache.push({ company, place_id, international_phone_number, date: new Date().getTime() });
                 history.save();
 
                 if (!international_phone_number) return res.status(400).send("No phone number");
                 return res.status(200).json({ international_phone_number });
-            }).catch(err => {
-                console.error(err?.response || err);
-                return res.sendStatus(err?.response?.status || 400);
-            });
-        }
-        else {
-            history.cache.push({ company });
-            history.save();
+            }
+            else {
+                history.cache.push({ company, place_id, date: new Date().getTime() });
+                history.save();
 
-            return res.status(400).send("Company not found");
-        }
+                return res.status(400).send("Company not found");
+            }
+        }).catch(err => {
+            console.error(err?.response || err);
+            return res.sendStatus(err?.response?.status || 400);
+        });
     }).catch(err => {
         console.error(err?.response || err);
         return res.sendStatus(err?.response?.status || 400);
@@ -115,25 +131,30 @@ class JsonDatabase {
         if (!fs.existsSync(_path)) fs.writeFileSync(_path, "[]");
 
         this.cache = JSON.parse(fs.readFileSync(_path));
+        this.bcachel = JSON.stringify(this.cache).length;
         this.lastSave = 0;
         this.isSaving = false;
     }
 
     save() {
-        if (this.isSaving) return;
+        if (this.isSaving || this.bcachel == JSON.stringify(this.cache).length) return;
 
         this.isSaving = true;
-        if (new Date().getTime() - this.lastSave > 500) {
+        if (new Date().getTime() - this.lastSave > 1000) {
             fs.writeFile(this.path, JSON.stringify(this.cache, null, 4), {}, () => {
                 this.isSaving = false;
+                this.lastSave = new Date().getTime();
+                this.bcachel = JSON.stringify(this.cache).length;
             });
         }
         else {
             setTimeout(() => {
                 fs.writeFile(this.path, JSON.stringify(this.cache, null, 4), {}, () => {
                     this.isSaving = false;
+                    this.lastSave = new Date().getTime();
+                    this.bcachel = JSON.stringify(this.cache).length;
                 });
-            }, 500 - (new Date().getTime() - this.lastSave));
+            }, 1000 - (new Date().getTime() - this.lastSave));
         }
     }
 
