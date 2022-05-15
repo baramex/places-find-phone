@@ -69,7 +69,7 @@ app.get("/phone-number", (req, res) => {
             return res.status(200).json({ international_phone_number: history.find(a => a.place_id == place_id).international_phone_number });
         }
 
-        axios.get(endpoints.details, { params: { place_id, fields: "international_phone_number,name", key: KEY } }).then(__res => {
+        axios.get(endpoints.details, { params: { place_id, fields: "international_phone_number,name", language: "fr", key: KEY } }).then(__res => {
             var name = __res.data.result.name.toLowerCase();
 
             var simComp = company;
@@ -77,7 +77,6 @@ app.get("/phone-number", (req, res) => {
                 simComp = simComp.replace(/ *\([^)]*\)*/g, "");
             }
             if (stringSimilarity.compareTwoStrings(simComp, name) >= 0.6 || name.startsWith(simComp) || name.endsWith(simComp) || name.includes(" " + simComp + " ")) {
-
                 var international_phone_number = __res.data.result?.international_phone_number;
 
                 history.cache.push({ company, place_id, international_phone_number, date: new Date().getTime() });
