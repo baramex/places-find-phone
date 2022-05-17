@@ -45,7 +45,7 @@ app.get("/phone-number", (req, res) => {
     profil.requests = profil.requests.filter(a => new Date().getTime() - a.date < 1000 * 60 * 60 * 24 * 30);
 
     var monthly = profil.requests.filter(a => a.endpoint == endpoint).length;
-    if (monthly > 1000) {
+    if (monthly > 2000) {
         credentials.save();
         return res.sendStatus(429);
     }
