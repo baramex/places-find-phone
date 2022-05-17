@@ -56,7 +56,7 @@ app.get("/phone-number", (req, res) => {
     axios.get(endpoints.find, { params: { input: company + " " + address, inputtype: "textquery", key: KEY } }).then(_res => {
         if (_res.data.status == "REQUEST_DENIED") return res.status(400).send(_res.data.error_message || "Error");
 
-        if (_res.data.status == "ZERO_RESULTS") {
+        if (_res.data.status == "ZERO_RESULTS" || _res.data.candidates.length == 0) {
             history.cache.push({ company, date: new Date().getTime() });
             history.save();
             return res.status(400).send("Company not found");
