@@ -70,13 +70,13 @@ app.get("/phone-number", (req, res) => {
         }
 
         axios.get(endpoints.details, { params: { place_id, fields: "international_phone_number,name", language: "fr", key: KEY } }).then(__res => {
-            var name = __res.data.result.name.toLowerCase();
+            var name = __res.data.result?.name?.toLowerCase();
 
             var simComp = company;
             if (simComp.includes("(") && simComp.includes(")")) {
                 simComp = simComp.replace(/ *\([^)]*\)*/g, "");
             }
-            if (stringSimilarity.compareTwoStrings(simComp, name) >= 0.6 || name.startsWith(simComp) || name.endsWith(simComp) || name.includes(" " + simComp + " ")) {
+            if (name && (stringSimilarity.compareTwoStrings(simComp, name) >= 0.6 || name.startsWith(simComp) || name.endsWith(simComp) || name.includes(" " + simComp + " "))) {
                 var international_phone_number = __res.data.result?.international_phone_number;
 
                 history.cache.push({ company, place_id, international_phone_number, date: new Date().getTime() });
