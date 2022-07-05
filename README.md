@@ -14,3 +14,11 @@ find company's phone number thanks to the places api from google
 
 ## Download
 [![](https://img.shields.io/github/v/release/baramex/places-find-phone?style=for-the-badge&label=last%20release)](https://github.com/baramex/places-find-phone/releases/latest/)<br/>
+
+## Usage
+- install node js and run `npm i`
+- add `createCredentials(["/phone-number"]);` at the end of the script
+- run once `node index.js`, then stop
+- remove the line (createCre...) and rerun the script
+- pick up your token in credentials.json and made an authenticated get request to `localhost:5600/phone-number` with `company` and `address` queries
+- and you can install it on a vps !
